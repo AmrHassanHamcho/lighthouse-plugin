@@ -1,11 +1,11 @@
+// app.component.ts
 import { Component } from '@angular/core';
+import { LighthouseAuditComponent } from './lighthouse/components/lighthouse-audit/lighthouse-audit.component';
 
 @Component({
   selector: 'app-root',
-  imports: [],
-  templateUrl: './app.component.html',
-  styleUrl: './app.component.scss'
+  template: `<app-lighthouse-audit></app-lighthouse-audit>`,
+  standalone: true,
+  imports: [LighthouseAuditComponent],
 })
-export class AppComponent {
-  title = 'lighthouse-plugin';
-}
+export class AppComponent {}

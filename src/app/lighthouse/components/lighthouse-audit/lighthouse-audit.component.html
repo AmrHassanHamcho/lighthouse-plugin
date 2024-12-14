@@ -1,0 +1,12 @@
+<!-- lighthouse-audit.component.html -->
+<div *ngIf="metrics">
+    <h2>Performance Metrics</h2>
+    <p>First Contentful Paint: {{ metrics.firstContentfulPaint }}</p>
+    <p>Speed Index: {{ metrics.speedIndex }}</p>
+    <p>Largest Contentful Paint: {{ metrics.largestContentfulPaint }}</p>
+    <p>Time to Interactive: {{ metrics.interactive }}</p>
+    <p>Total Blocking Time: {{ metrics.totalBlockingTime }}</p>
+    <p>Cumulative Layout Shift: {{ metrics.cumulativeLayoutShift }}</p>
+  </div>
+  <button (click)="runAudit('http://example.com')">Run Audit</button>
+  
