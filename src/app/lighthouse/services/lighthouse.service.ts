@@ -1,8 +1,6 @@
-// lighthouse.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { PerformanceMetrics } from '../models/performance-metrics.model';
 
 @Injectable({
   providedIn: 'root'
@@ -10,7 +8,7 @@ import { PerformanceMetrics } from '../models/performance-metrics.model';
 export class LighthouseService {
   constructor(private http: HttpClient) {}
 
-  getPerformanceMetrics(url: string): Observable<PerformanceMetrics> {
-    return this.http.post<PerformanceMetrics>('http://localhost:3000/api/lighthouse/run', { url });
+  getPerformanceMetrics(url: string): Observable<any> {
+    return this.http.post<any>('http://localhost:3000/api/lighthouse/run', { url });
   }
 }

@@ -1,11 +1,8 @@
-// performance-metrics.model.ts
-
 export interface PerformanceMetrics {
-    firstContentfulPaint: number;
-    speedIndex: number;
-    largestContentfulPaint: number;
-    interactive: number;
-    totalBlockingTime: number;
-    cumulativeLayoutShift: number;
-  }
-  
+  firstContentfulPaint: string[];
+  speedIndex: string[];
+  largestContentfulPaint: string[];
+  interactive: string[];
+  totalBlockingTime: string[];
+  cumulativeLayoutShift: string[];
+}
