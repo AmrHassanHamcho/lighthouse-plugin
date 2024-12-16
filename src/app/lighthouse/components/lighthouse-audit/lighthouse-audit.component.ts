@@ -19,7 +19,8 @@ export class LighthouseAuditComponent {
     this.loading = true; // Start loading
     this.lighthouseService.getPerformanceMetrics(url).subscribe({
       next: (data) => {
-        const audits = data.lighthouseResult.audits;
+        console.log(data)
+        const audits = data.audits;
         this.metrics = {
           firstContentfulPaint: audits['first-contentful-paint']?.displayValue || 0,
           speedIndex: audits['speed-index']?.displayValue || 0,
