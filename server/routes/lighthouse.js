@@ -19,7 +19,7 @@ router.post('/run', async (req, res) => {
             port: chrome.port,
             output: 'json',
             logLevel: 'info',
-            onlyCategories: ['performance', 'sustainability'], // Include both categories 'performance', 
+            onlyCategories: ['sustainability'], // Include both categories 'performance', 
         };
 
         console.log('Running Lighthouse with Config:', config);

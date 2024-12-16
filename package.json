@@ -22,6 +22,7 @@
     "@angular/platform-server": "^19.0.0",
     "@angular/router": "^19.0.0",
     "@angular/ssr": "^19.0.5",
+    "@tgwf/co2": "^0.16.4",
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "rxjs": "~7.8.0",
