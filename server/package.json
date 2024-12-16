@@ -12,8 +12,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@lhci/cli": "^0.14.0",
     "chrome-launcher": "^1.1.2",
     "express": "^4.21.2",
-    "lighthouse": "^12.3.0"
+    "lighthouse": "^12.3.0",
+    "puppeteer": "^23.10.4"
   }
 }
