@@ -1,0 +1,49 @@
+name: Lighthouse CI Pipeline with Sustainability Benchmarks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  sustainability-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the code from the repository
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Node.js environment
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      # Step 3: Install dependencies
+      - name: Install Dependencies
+        run: npm install
+
+      # Step 4: Run Lighthouse audits and output results
+      - name: Run Lighthouse Audit
+        run: |
+          npm run build
+          npx lighthouse-ci https://example.com --output json --output html --config lighthouse-config.js
+        continue-on-error: true
+        id: lighthouse
+
+      # Step 5: Parse the JSON results to compare with benchmarks
+      - name: Parse Sustainability Metrics
+        run: |
+          RESULT=$(cat ./lighthouse-result.json | jq '.audits')
+          CO2=$(echo $RESULT | jq -r '.["co2-emission-audit"].details.items[0].emission')
+          if (( $(echo "$CO2 > 1" | bc -l) )); then
+            echo "CO2 emissions exceed the benchmark of 1 gram per page load."
+            exit 1
+          fi
+          echo "Sustainability metrics are within acceptable ranges."
+        env:
+          NODE_ENV: production
