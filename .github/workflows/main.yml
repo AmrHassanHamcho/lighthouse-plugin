@@ -1,4 +1,4 @@
-name: Lighthouse CI Pipeline with Sustainability Benchmarks
+name: CI/CD Pipeline with Sustainability Checks
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the code from the repository
+      # Step 1: Checkout the code
       - name: Checkout Code
         uses: actions/checkout@v3
 
@@ -23,22 +23,34 @@ jobs:
         with:
           node-version: '16'
 
-      # Step 3: Install dependencies
-      - name: Install Dependencies
+      # Step 3: Install Backend Dependencies
+      - name: Install Backend Dependencies
+        working-directory: ./server
         run: npm install
 
-      # Step 4: Run Lighthouse audits and output results
-      - name: Run Lighthouse Audit
-        run: |
-          npm run build
-          npx lighthouse-ci https://example.com --output json --output html --config lighthouse-config.js
-        continue-on-error: true
-        id: lighthouse
+      # Step 4: Start the Backend Server
+      - name: Start Backend Server
+        working-directory: ./server
+        run: npm start &
+        env:
+          PORT: 3000
+        # Allow server to initialize
+      - name: Wait for Server Startup
+        run: sleep 10
 
-      # Step 5: Parse the JSON results to compare with benchmarks
-      - name: Parse Sustainability Metrics
+      # Step 5: Run Lighthouse Audits via the Backend
+      - name: Run Lighthouse Audits
+        working-directory: ./server
         run: |
-          RESULT=$(cat ./lighthouse-result.json | jq '.audits')
+          curl -X POST -H "Content-Type: application/json" \
+          -d '{"url": "https://example.com"}' \
+          http://localhost:3000/api/lighthouse/run > lighthouse-result.json
+        continue-on-error: true
+
+      # Step 6: Validate Sustainability Metrics
+      - name: Validate Sustainability Metrics
+        run: |
+          RESULT=$(cat ./server/lighthouse-result.json | jq '.audits')
           CO2=$(echo $RESULT | jq -r '.["co2-emission-audit"].details.items[0].emission')
           if (( $(echo "$CO2 > 1" | bc -l) )); then
             echo "CO2 emissions exceed the benchmark of 1 gram per page load."
