@@ -81,6 +81,7 @@ export class LighthouseAuditComponent {
         const totalCO2 = resourceItems.reduce((sum: number, item: any) => sum + (item.size * 0.02), 0); // Calculate total CO₂
 
         this.metrics.sustainability = {
+          totalCO2: totalCO2,
           co2Emissions: audits['co2-estimation-audit']?.details.items[0]?.value || 0,
           resourceBreakdown: resourceItems.map((item: any) => {
             const co2 = item.size * 0.02; // CO₂ emissions for this resource
