@@ -12,35 +12,33 @@ import { GoalService } from '../../services/goal.service';
   styleUrls: ['./lighthouse-audit.component.scss']
 })
 export class LighthouseAuditComponent {
-  // Audit metrics container
   metrics: any = {
     performance: {},
     sustainability: {
       resourceBreakdown: [],
+      totalCO2: 0
     },
   };
   loading: boolean = false;
 
-  // URL and goal properties
   auditUrl: string = 'https://apw.bss.design/';
   goal: number | null = null;
   goalMessage: string = '';
   savedGoal: any = null;
+  goalMg: number = 0; // suggested goal in milligrams
 
   constructor(
     private lighthouseService: LighthouseService,
     private goalService: GoalService
   ) {}
 
-  // Trigger Lighthouse audit and update metrics
   runAudit(url: string): void {
     this.loading = true;
     this.lighthouseService.getPerformanceMetrics(url).subscribe({
       next: (data) => {
-        console.log(data);
         const audits = data.audits;
 
-        // Set performance metrics
+        // Performance metrics
         this.metrics.performance = {
           firstContentfulPaint: audits['first-contentful-paint']?.displayValue || 0,
           speedIndex: audits['speed-index']?.displayValue || 0,
@@ -50,7 +48,7 @@ export class LighthouseAuditComponent {
           cumulativeLayoutShift: audits['cumulative-layout-shift']?.displayValue || 0,
         };
 
-        // Set sustainability metrics based on resource breakdown audit
+        // Sustainability metrics
         const resourceItems = audits['resource-breakdown-audit']?.details.items || [];
         const totalCO2 = resourceItems.reduce(
           (sum: number, item: any) => sum + (item.size * 0.02),
@@ -58,7 +56,7 @@ export class LighthouseAuditComponent {
         );
 
         this.metrics.sustainability = {
-          totalCO2: totalCO2,
+          totalCO2,
           co2Emissions: audits['co2-estimation-audit']?.details.items[0]?.value || 0,
           resourceBreakdown: resourceItems.map((item: any) => {
             const co2 = item.size * 0.02;
@@ -66,14 +64,16 @@ export class LighthouseAuditComponent {
             return {
               resourceType: item.resourceType,
               size: item.size,
-              co2: co2.toFixed(2),
+              co2: co2.toFixed(4),   // keep four decimals for precision
               contribution,
             };
           }),
         };
 
+        // Immediately compute the suggested goal in mg
+        this.applySuggestedGoal();
+
         this.loading = false;
-        // Retrieve any saved goal for this URL after updating metrics
         this.getGoal();
       },
       error: (error) => {
@@ -83,16 +83,15 @@ export class LighthouseAuditComponent {
     });
   }
 
-  // Apply a suggested goal based on a 10% reduction from current total CO₂ emissions
   applySuggestedGoal(): void {
-    const currentCO2 = this.metrics.sustainability?.totalCO2;
-    if (currentCO2) {
-      this.goal = +(currentCO2 * 0.9).toFixed(2);
-      this.goalMessage = 'Suggested goal applied. You can adjust it if needed.';
+    const currentG = this.metrics.sustainability?.totalCO2;
+    if (typeof currentG === 'number') {
+      const currentMg = currentG * 1000;                      // convert g → mg
+      this.goalMg = +((currentMg * 0.9).toFixed(2));          // 10% reduction
+      console.log('Computed goalMg:', this.goalMg);
     }
   }
 
-  // Save the sustainability goal using the GoalService
   saveGoal(): void {
     if (!this.auditUrl || this.goal === null) {
       this.goalMessage = 'Please provide a valid URL and goal.';
@@ -110,15 +109,10 @@ export class LighthouseAuditComponent {
     });
   }
 
-  // Retrieve the saved goal for the current audit URL
   getGoal(): void {
-    if (!this.auditUrl) {
-      return;
-    }
+    if (!this.auditUrl) return;
     this.goalService.getGoal(this.auditUrl).subscribe({
-      next: (data) => {
-        this.savedGoal = data;
-      },
+      next: (data) => this.savedGoal = data,
       error: (error) => {
         console.error('Error retrieving saved goal', error);
         this.savedGoal = null;
