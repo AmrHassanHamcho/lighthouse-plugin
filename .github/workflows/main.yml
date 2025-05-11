@@ -37,7 +37,7 @@ jobs:
       - name: Run Lighthouse Goal Check
         # This will invoke check-goal.js, which exits 1 if the goal is not met
         run: |
-          node check-goal.js \
+          node server/check-goal.js \
             "${{ env.AUDIT_URL }}" \
             "http://localhost:${{ env.BACKEND_PORT }}/api/lighthouse/run" \
             "http://localhost:${{ env.BACKEND_PORT }}/api/goals"
