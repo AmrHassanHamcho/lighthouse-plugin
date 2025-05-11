@@ -53,7 +53,7 @@ jobs:
           RESULT=$(cat ./server/lighthouse-result.json | jq '.audits')
           CO2=$(echo $RESULT | jq -r '.["co2-emission-audit"].details.items[0].emission')
           if (( $(echo "$CO2 > 1" | bc -l) )); then
-            echo "CO2 emissions exceed the benchmark of 1 gram per page load."
+            echo "CO2 emissions exceed the target of 1 gram per page load."
             exit 1
           fi
           echo "Sustainability metrics are within acceptable ranges."
