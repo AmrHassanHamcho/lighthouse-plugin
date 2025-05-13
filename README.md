@@ -1,6 +1,12 @@
 # LighthousePlugin
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.0.5.
+## Start local db
+sqlite3 sustainability.db
+
+## Start Express server
+
+npm run start:server
 
 ## Development server
 
