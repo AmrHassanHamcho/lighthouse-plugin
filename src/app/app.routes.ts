@@ -9,5 +9,4 @@ export const appRoutes: Routes = [
       import('./lighthouse/components/lighthouse-audit/lighthouse-audit.component')
         .then(m => m.LighthouseAuditComponent)
   },
-  // ...etc.
 ];
