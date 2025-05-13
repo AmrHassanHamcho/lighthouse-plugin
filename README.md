@@ -63,3 +63,9 @@ Angular CLI does not come with an end-to-end testing framework by default. You c
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+
+
+##DB demo 
+SELECT id, url, measured_co2, created_at  FROM audits LIMIT 5;
+SELECT id, url, measured_co2, datetime(created_at, 'unixepoch')        FROM audits ORDER BY id DESC LIMIT 5;
+
