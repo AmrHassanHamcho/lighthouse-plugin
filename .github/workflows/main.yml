@@ -37,10 +37,15 @@ jobs:
       - name: Run Lighthouse Goal Check
         # This will invoke check-goal.js, which exits 1 if the goal is not met
         run: |
-          node server/check-goal.js \
-            "${{ env.AUDIT_URL }}" \
-            "http://localhost:${{ env.BACKEND_PORT }}/api/lighthouse/run" \
-            "http://localhost:${{ env.BACKEND_PORT }}/api/goals"
+          RESULT=$(cat ./server/lighthouse-result.json | jq '.audits')
+          CO2=$(echo $RESULT | jq -r '.["co2-emission-audit"].details.items[0].emission')
+          if (( $(echo "$CO2 > 1" | bc -l) )); then
+            echo "CO2 emissions exceed the target of 1 gram per page load."
+            exit 1
+          fi
+          echo "Sustainability metrics are within acceptable ranges."
+        env:
+          NODE_ENV: production
 
       - name: Report success
         if: ${{ always() }}

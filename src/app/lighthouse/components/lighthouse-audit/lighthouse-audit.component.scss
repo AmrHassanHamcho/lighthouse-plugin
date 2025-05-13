@@ -1,22 +1,91 @@
+/* Loading Indicator */
+.loading-indicator {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+}
+
+/* Audit Section Styling */
+.audit-section {
+  margin: 20px 0;
+}
+
+.audit-section input {
+  padding: 8px;
+  width: 300px;
+  margin-right: 10px;
+}
+
+/* Suggested Goal Section Styling */
+.suggested-goal {
+  background-color: #eef;
+  border: 1px solid #99c;
+  padding: 15px;
+  margin-top: 20px;
+  border-radius: 4px;
+}
+
+/* Goal Setting Section Styling */
+.goal-section {
+  margin-top: 30px;
+}
+
+
+.goal-section label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.goal-section input[type="number"] {
+  padding: 8px;
+  width: 200px;
+  margin-bottom: 10px;
+  margin-right: 10px; /* Added space between the input and the Save Goal button */
+}
+
+/* Goal Guide (Explanation) Styling */
+.goal-guide {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  padding: 15px;
+  margin-top: 20px;
+  border-radius: 4px;
+}
+
+.goal-guide h3 {
+  margin-top: 0;
+}
+
+.goal-guide ul {
+  list-style: disc;
+  margin-left: 20px;
+}
+
+.goal-guide li {
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+/* Table Styling for Resource Breakdown */
 table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 20px 0;
-    font-size: 16px;
-  }
-  
-  th, td {
-    border: 1px solid #ddd;
-    padding: 12px 15px;
-    text-align: left;
-  }
-  
-  th {
-    background-color: #f4f4f4;
-    font-weight: bold;
-  }
-  
-  tbody tr:nth-child(even) {
-    background-color: #f9f9f9;
-  }
-  
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 16px;
+}
+
+th,
+td {
+  border: 1px solid #ddd;
+  padding: 12px 15px;
+  text-align: left;
+}
+
+th {
+  background-color: #f4f4f4;
+  font-weight: bold;
+}
+
+tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
