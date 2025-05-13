@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LighthouseService } from '../../services/lighthouse.service';
 import { GoalService } from '../../services/goal.service';
+import { SuggestionService } from '../../services/suggestion.service';
 
 @Component({
   selector: 'app-lighthouse-audit',
@@ -15,108 +16,146 @@ export class LighthouseAuditComponent {
   metrics: any = {
     performance: {},
     sustainability: {
-      resourceBreakdown: [],
+      resourceBreakdown: [] as Array<{
+        resourceType: string;
+        sizeMB: number;
+        co2: number;
+        contribution: number;
+      }>,
       totalCO2: 0
     },
   };
-  loading: boolean = false;
+  loading = false;
 
-  auditUrl: string = 'https://apw.bss.design/';
+  // History-based suggestion:
+  suggestedGoalG: number | null = null;   // grams
+  suggestedGoalMg: number | null = null;  // milligrams
+  fallbackText = '';
+
+  auditUrl = 'https://apw.bss.design/';
   goal: number | null = null;
-  goalMessage: string = '';
+  goalMessage = '';
   savedGoal: any = null;
-  goalMg: number = 0; // suggested goal in milligrams
 
   constructor(
     private lighthouseService: LighthouseService,
+    private suggestionService: SuggestionService,
     private goalService: GoalService
   ) {}
 
   runAudit(url: string): void {
     this.loading = true;
+
+    // 1️⃣ run Lighthouse
     this.lighthouseService.getPerformanceMetrics(url).subscribe({
-      next: (data) => {
+      next: data => {
         const audits = data.audits;
 
-        // Performance metrics
+        // performance (unchanged)
         this.metrics.performance = {
-          firstContentfulPaint: audits['first-contentful-paint']?.displayValue || 0,
-          speedIndex: audits['speed-index']?.displayValue || 0,
+          firstContentfulPaint:    audits['first-contentful-paint']?.displayValue || 0,
+          speedIndex:             audits['speed-index']?.displayValue           || 0,
           largestContentfulPaint: audits['largest-contentful-paint']?.displayValue || 0,
-          interactive: audits['interactive']?.displayValue || 0,
-          totalBlockingTime: audits['total-blocking-time']?.displayValue || 0,
-          cumulativeLayoutShift: audits['cumulative-layout-shift']?.displayValue || 0,
+          interactive:            audits['interactive']?.displayValue           || 0,
+          totalBlockingTime:      audits['total-blocking-time']?.displayValue   || 0,
+          cumulativeLayoutShift:  audits['cumulative-layout-shift']?.displayValue || 0,
         };
 
-        // Sustainability metrics
+        // sustainability
         const resourceItems = audits['resource-breakdown-audit']?.details.items || [];
-        const totalCO2 = resourceItems.reduce(
-          (sum: number, item: any) => sum + (item.size * 0.02),
+        const co2Items      = audits['co2-estimation-audit']?.details.items      || [];
+
+        // total CO₂
+        const totalCO2 = co2Items.reduce(
+          (sum: number, it: any) => sum + parseFloat(it.co2 ?? it.value ?? '0'),
           0
         );
 
+        // breakdown
+        const breakdown = resourceItems.map((item: any) => {
+          const sizeMB = item.size || 0;
+          // convert bytes → megabytes
+          const co2Entry = co2Items.find((c: any) => c.resourceType === item.resourceType);
+          const itemCo2 = co2Entry ? parseFloat(co2Entry.co2 ?? co2Entry.value) : 0;
+          const contribution = totalCO2 > 0 ? (itemCo2 / totalCO2) * 100 : 0;
+
+          return {
+            resourceType:  item.resourceType,
+            sizeMB:      +sizeMB.toFixed(2),
+            co2:           +itemCo2.toFixed(4),
+            contribution:  +contribution.toFixed(2),
+          };
+        });
+
         this.metrics.sustainability = {
-          totalCO2,
-          co2Emissions: audits['co2-estimation-audit']?.details.items[0]?.value || 0,
-          resourceBreakdown: resourceItems.map((item: any) => {
-            const co2 = item.size * 0.02;
-            const contribution = ((co2 / totalCO2) * 100).toFixed(2);
-            return {
-              resourceType: item.resourceType,
-              size: item.size,
-              co2: co2.toFixed(4),   // keep four decimals for precision
-              contribution,
-            };
-          }),
+          totalCO2: +totalCO2.toFixed(4),
+          resourceBreakdown: breakdown
         };
 
-        // Immediately compute the suggested goal in mg
-        this.applySuggestedGoal();
+        // 2️⃣ fetch history-based suggestion
+        this.suggestionService.getSuggestion(url).subscribe({
+          next: (resp: any) => {
+            if (resp.suggestedGoal != null) {
+              this.suggestedGoalG  = +resp.suggestedGoal.toFixed(4);
+              this.suggestedGoalMg = +(resp.suggestedGoal * 1000).toFixed(2);
+            } else {
+              // fallback % if no history
+              const p = resp.fallbackReduction ?? 0.1;
+              this.fallbackText   = `No history—using ${Math.round(p*100)}% reduction`;
+              this.suggestedGoalG  = +(totalCO2 * (1 - p)).toFixed(4);
+              this.suggestedGoalMg = +(this.suggestedGoalG * 1000).toFixed(2);
+            }
 
-        this.loading = false;
-        this.getGoal();
+            // load any previously saved goal
+            this.getGoal();
+            this.loading = false;
+          },
+          error: e => {
+            console.error('Could not retrieve suggested goal', e);
+            this.loading = false;
+          }
+        });
       },
-      error: (error) => {
-        console.error('Failed to load metrics', error);
+      error: err => {
+        console.error('Failed to load metrics', err);
         this.loading = false;
-      },
+      }
     });
   }
 
-  applySuggestedGoal(): void {
-    const currentG = this.metrics.sustainability?.totalCO2;
-    if (typeof currentG === 'number') {
-      const currentMg = currentG * 1000;                      // convert g → mg
-      this.goalMg = +((currentMg * 0.9).toFixed(2));          // 10% reduction
-      console.log('Computed goalMg:', this.goalMg);
+  applySuggestedGoalFromServer() {
+    if (this.suggestedGoalG != null) {
+      this.goal = this.suggestedGoalG;
+      this.goalMessage = 'Applied server-suggested goal';
     }
   }
 
-  saveGoal(): void {
-    if (!this.auditUrl || this.goal === null) {
-      this.goalMessage = 'Please provide a valid URL and goal.';
+  saveGoal() {
+    if (!this.auditUrl || this.goal == null) {
+      this.goalMessage = 'Please enter a goal after running an audit.';
       return;
     }
     this.goalService.saveGoal(this.auditUrl, { sustainabilityGoal: this.goal }).subscribe({
-      next: (data) => {
+      next: data => {
         this.goalMessage = 'Goal saved successfully.';
         this.savedGoal = data.goal;
       },
-      error: (error) => {
-        console.error('Failed to save goal', error);
+      error: err => {
+        console.error('Failed to save goal', err);
         this.goalMessage = 'Failed to save goal.';
-      },
+      }
     });
   }
 
   getGoal(): void {
     if (!this.auditUrl) return;
     this.goalService.getGoal(this.auditUrl).subscribe({
-      next: (data) => this.savedGoal = data,
-      error: (error) => {
-        console.error('Error retrieving saved goal', error);
-        this.savedGoal = null;
+      next: saved => {
+        this.savedGoal = saved;            // savedGoal will be null if none exists
       },
+      error: err => {
+        console.error('Unexpected error retrieving saved goal', err);
+      }
     });
   }
 }

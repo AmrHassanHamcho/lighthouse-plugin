@@ -89,3 +89,26 @@ th {
 tbody tr:nth-child(even) {
   background-color: #f9f9f9;
 }
+
+.card {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 1rem;
+  margin: 1rem 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  h3 {
+    margin-top: 0;
+  }
+}
+
+.fallback-note {
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
+.status-message {
+  margin-top: 0.5rem;
+  color: green;
+}
