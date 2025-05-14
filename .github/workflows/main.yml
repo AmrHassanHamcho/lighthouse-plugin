@@ -34,19 +34,11 @@ jobs:
           echo "Waiting for backend to be ready..."
           npx wait-on http://localhost:${{ env.BACKEND_PORT }}/api/lighthouse/run --timeout 60s
 
-      - name: Run Lighthouse Goal Check
-        # This will invoke check-goal.js, which exits 1 if the goal is not met
+       - name: Run Sustainability Goal Check
         run: |
-          RESULT=$(cat ./server/lighthouse-result.json | jq '.audits')
-          CO2=$(echo $RESULT | jq -r '.["co2-emission-audit"].details.items[0].emission')
-          if (( $(echo "$CO2 > 1" | bc -l) )); then
-            echo "CO2 emissions exceed the target of 1 gram per page load."
-            exit 1
-          fi
-          echo "Sustainability metrics are within acceptable ranges."
-        env:
-          NODE_ENV: production
-
+          # kick off the check-goal script with your production URL
+          node server/check-goal.js "${{ secrets.AUDIT_URL }}"
+          
       - name: Report success
         if: ${{ always() }}
         run: echo "Sustainability goal met! 🎉"
