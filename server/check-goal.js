@@ -38,7 +38,7 @@ async function main() {
           // 4) Finally, fall back to your 10% static
           const measuredStatic = measured;
           target = +(measuredStatic * 0.9).toFixed(4);
-          console.log(`⚠️  Not enough history → 10% static fallback: ${target.toFixed(4)} g`);
+          console.log(`⚠️ Not enough history → 10% static fallback: ${target.toFixed(4)} g`);
         }
       } else {
         throw e;
