@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 import axios from 'axios';
+import { initDb } from './db.js';
 
 async function main() {
-  const [,, url] = process.argv;
-  if (!url) {
-    console.error('Usage: node check-goal.js <url>');
-    process.exit(1);
-  }
+  const [, , rawUrl] = process.argv;
+  const url = rawUrl || 'https://apw.bss.design/';
+  console.log(`🔍 Auditing URL: ${url}`);
 
   try {
     // 1) Run the Lighthouse audit
@@ -14,14 +13,15 @@ async function main() {
       'http://localhost:3000/api/lighthouse/run',
       { url }
     );
-    const co2Items = auditRes.data.audits['co2-estimation-audit']?.details.items || [];
+    const co2Items =
+      auditRes.data?.audits?.['co2-estimation-audit']?.details?.items || [];
     const measured = co2Items
       .reduce((sum, item) => sum + parseFloat(item.co2 || item.value || 0), 0);
 
     let target;
 
     try {
-      // 2) Fetch any saved goal from the database
+      // 2) Try fetching saved goal
       const goalRes = await axios.get(
         `http://localhost:3000/api/goals?url=${encodeURIComponent(url)}`
       );
@@ -29,7 +29,7 @@ async function main() {
       console.log(`🔖 Using saved goal from DB: ${target.toFixed(4)} g`);
     } catch (e) {
       if (e.response?.status === 404) {
-        // 3) No saved goal → fetch history for adaptive logic
+        // 3) Adaptive/history logic
         const historyRes = await axios.get(
           `http://localhost:3000/api/history?url=${encodeURIComponent(url)}`
         );
@@ -41,24 +41,38 @@ async function main() {
           target = +(Clatest * (1 - r)).toFixed(4);
           console.log(`🧠 Adaptive goal based on history: ${target.toFixed(4)} g`);
         } else {
-          // 4) Fallback: 10% reduction on current measured CO₂
+          // 4) Fallback: 10% reduction
           target = +(measured * 0.9).toFixed(4);
-          console.log(`⚠️ No history → 10% fallback goal: ${target.toFixed(4)} g`);
+          console.log(`⚠️ No history → fallback goal = 90% of current = ${target.toFixed(4)} g`);
         }
       } else {
         throw e;
       }
     }
 
-    // 5) Compare measured vs target
-    console.log(`📊 Measured: ${measured.toFixed(4)} g  vs.  Target: ${target.toFixed(4)} g`);
+    // 5) Print measured & target
+    console.log(`📊 Measured CO₂: ${measured.toFixed(4)} g`);
+    console.log(`🎯 Target CO₂:   ${target.toFixed(4)} g`);
+
+    // 6) Pass or fail
     if (measured > target) {
       console.error(`🚨 FAIL: ${measured.toFixed(4)} g > ${target.toFixed(4)} g`);
+      // **On failure: fetch last audit from DB**
+      const db = await initDb();
+      const row = await db.get(
+        'SELECT measured_co2, created_at FROM audits WHERE url = ? ORDER BY created_at DESC LIMIT 1',
+        url
+      );
+      if (row) {
+        console.log(`🔄 Last stored audit: ${row.measured_co2.toFixed(4)} g (at ${new Date(row.created_at).toISOString()})`);
+      } else {
+        console.log('ℹ️  No previous audit record found in database.');
+      }
       process.exit(1);
-    } else {
-      console.log(`✅ PASS: ${measured.toFixed(4)} g ≤ ${target.toFixed(4)} g`);
-      process.exit(0);
     }
+
+    console.log(`✅ PASS: ${measured.toFixed(4)} g ≤ ${target.toFixed(4)} g`);
+    process.exit(0);
 
   } catch (err) {
     console.error('Error in check-goal:', err.response?.data ?? err.message);
@@ -67,68 +81,3 @@ async function main() {
 }
 
 main();
-
-// #!/usr/bin/env node
-// import axios from 'axios';
-
-// async function main() {
-//   const [,, url] = process.argv;
-//   if (!url) {
-//     console.error('Usage: node check-goal.js <url>');
-//     process.exit(1);
-//   }
-
-//   try {
-//     // 1) Run the Lighthouse audit
-//     const auditRes = await axios.post(
-//       'http://localhost:3000/api/lighthouse/run',
-//       { url }
-//     );
-//     const co2Items = auditRes.data.audits['co2-estimation-audit']?.details.items || [];
-//     const measured   = co2Items.reduce((sum, item) => sum + parseFloat(item.co2 || item.value || 0), 0);
-
-//     // 2) Try fetching a saved goal
-//     let target = null;
-//     try {
-//       const goalRes = await axios.get(
-//         `http://localhost:3000/api/goals?url=${encodeURIComponent(url)}`
-//       );
-//       target = parseFloat(goalRes.data.sustainabilityGoal);
-//       console.log(`🔖 Using saved goal: ${target.toFixed(4)} g`);
-//     } catch (e) {
-//       if (e.response?.status === 404) {
-//         // 3) No saved goal → fall back to history-based suggestion
-//         const suggestRes = await axios.get(
-//           `http://localhost:3000/api/goals/suggest?url=${encodeURIComponent(url)}`
-//         );
-//         if (suggestRes.data.suggestedGoal != null) {
-//           target = parseFloat(suggestRes.data.suggestedGoal);
-//           console.log(`🔮 Using history-based suggestion: ${target.toFixed(4)} g`);
-//         } else {
-//           // 4) Finally, fall back to your 10% static
-//           const measuredStatic = measured;
-//           target = +(measuredStatic * 0.9).toFixed(4);
-//           console.log(`⚠️ Not enough history → 10% static fallback: ${target.toFixed(4)} g`);
-//         }
-//       } else {
-//         throw e;
-//       }
-//     }
-
-//     // 5) Compare
-//     console.log(`📊 Measured: ${measured.toFixed(4)} g  vs.  Target: ${target.toFixed(4)} g`);
-//     if (measured > target) {
-//       console.error(`🚨 FAIL: ${measured.toFixed(4)} g > ${target.toFixed(4)} g`);
-//       process.exit(1);
-//     } else {
-//       console.log(`✅ PASS: ${measured.toFixed(4)} g ≤ ${target.toFixed(4)} g`);
-//       process.exit(0);
-//     }
-
-//   } catch (err) {
-//     console.error('Error in check-goal:', err.response?.data ?? err.message);
-//     process.exit(1);
-//   }
-// }
-
-// main();
