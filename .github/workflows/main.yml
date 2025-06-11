@@ -23,81 +23,24 @@ jobs:
         with:
           node-version: '18.x'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies (including nodemon and wait-on)
+        run: |
+          npm ci
+          npm install nodemon wait-on --save-dev
 
       - name: Build frontend (if needed)
         run: npm run build --if-present
 
       - name: Start Express backend
         run: |
-          npm run start:server &            # your script to start Express on port 3000
+          npm run start:server &
           echo "Waiting for backend to be ready..."
           npx wait-on http://localhost:${{ env.BACKEND_PORT }}/api/lighthouse/run --timeout 60s
 
       - name: Run Sustainability Goal Check
         run: |
-          # kick off the check-goal script with your production URL
           node server/check-goal.js "${{ secrets.AUDIT_URL }}"
 
       - name: Report success
         if: ${{ always() }}
-        run: echo "Sustainability goal met! 🎉"
-
-# # File: .github/workflows/sustainability-audit.yml
-# name: Sustainability Audit & Goal Check
-
-# on:
-#   push:
-#     branches: [ main ]
-#   pull_request:
-#     branches: [ main ]
-
-# jobs:
-#   audit-and-goal-check:
-#     runs-on: ubuntu-latest
-#     env:
-#       AUDIT_URL: ${{ secrets.AUDIT_URL }}
-#       BACKEND_PORT: 3000
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@v3
-
-#       - name: Set up Node.js
-#         uses: actions/setup-node@v3
-#         with:
-#           node-version: '18.x'
-
-#       - name: Install dependencies
-#         run: npm ci
-
-#       - name: Build frontend (if needed)
-#         run: npm run build --if-present
-
-#       - name: Start Express backend
-#         run: |
-#           npm run start:server &            # Start Express on port 3000
-#           echo "Waiting for backend to be ready..."
-#           npx wait-on http://localhost:${{ env.BACKEND_PORT }}/api/lighthouse/run --timeout 60s
-
-#       - name: Run Lighthouse Goal Check with Dynamic Goal
-#         run: |
-#           echo "Fetching sustainability goal from backend..."
-#           GOAL=$(curl -s http://localhost:${{ env.BACKEND_PORT }}/api/goals | jq -r '.targetEmission')
-
-#           echo "Parsing Lighthouse results..."
-#           RESULT=$(cat ./server/lighthouse-result.json | jq '.audits')
-#           CO2=$(echo $RESULT | jq -r '.["co2-emission-audit"].details.items[0].emission')
-
-#           echo "Emission: $CO2 gCO₂ | Goal: $GOAL gCO₂"
-#           if (( $(echo "$CO2 > $GOAL" | bc -l) )); then
-#             echo "❌ CO₂ emissions exceed the goal of $GOAL g per page load."
-#             exit 1
-#           fi
-#           echo "✅ Sustainability goal met! Emissions within target."
-#         env:
-#           NODE_ENV: production
-
-#       - name: Report success
-#         if: ${{ always() }}
-#         run: echo "Audit completed."
+        run: echo "Sustainability goal check complete ✅"
