@@ -34,9 +34,9 @@ jobs:
 
       - name: Start Express backend
         run: |
-          npm run start:server &  # starts your Express app on port 3000
-          echo "Waiting for backend to be ready..."
-          npx wait-on http://localhost:${{ env.BACKEND_PORT }}/api/lighthouse/run --timeout 60s
+          npm run start:server &            # starts your Express app
+          echo "Waiting 20s for server to be ready..."
+          sleep 20                           # simple delay instead of wait-on
 
       - name: Run Sustainability Goal Check
         run: node server/check-goal.js "${{ secrets.AUDIT_URL }}"
