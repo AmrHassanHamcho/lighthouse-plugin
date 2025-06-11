@@ -13,6 +13,7 @@ jobs:
     env:
       AUDIT_URL: ${{ secrets.AUDIT_URL }}       # e.g. https://my.production.site
       BACKEND_PORT: 3000
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -34,11 +35,11 @@ jobs:
           echo "Waiting for backend to be ready..."
           npx wait-on http://localhost:${{ env.BACKEND_PORT }}/api/lighthouse/run --timeout 60s
 
-       - name: Run Sustainability Goal Check
+      - name: Run Sustainability Goal Check
         run: |
           # kick off the check-goal script with your production URL
           node server/check-goal.js "${{ secrets.AUDIT_URL }}"
-          
+
       - name: Report success
         if: ${{ always() }}
         run: echo "Sustainability goal met! 🎉"
