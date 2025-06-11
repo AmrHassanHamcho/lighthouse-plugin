@@ -39,7 +39,7 @@ jobs:
           sleep 20                           # simple delay instead of wait-on
 
       - name: Run Sustainability Goal Check
-        run: node server/check-goal.js "${{ secrets.AUDIT_URL }}"
+        run: node server/check-goal.js "http://localhost:4200/#/lighthouse"
 
       - name: Report result
         if: ${{ always() }}
